@@ -1,15 +1,13 @@
 // created by Eylon Yogev.
+// modified by Vu Quoc Huy.
 
-chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
-	if (changeInfo.status == 'complete'){
-		try
-		{
-			console.log(changeInfo.status);
-			HandleTab(tab);
-		}
-		catch(err){
-			console.log(err);
-		}
+
+browser.browserAction.onClicked.addListener(function (tab) {
+	try {
+		HandleTab(tab);
+	}
+	catch (err) {
+		console.log(err);
 	}
 });
 
@@ -17,7 +15,7 @@ var handlers = {};
 init();
 
 
-function init(){
+function init() {
 	handlers['eprint.iacr.org'] = ePrintScraper;
 	handlers['arxiv.org'] = arxivScraper;
 	handlers["eccc.weizmann.ac.il"] = ecccScraper;
@@ -34,103 +32,100 @@ function init(){
 }
 
 
-function HandleTab(tab){
+function HandleTab(tab) {
 	var url = tab.url;
-	chrome.bookmarks.search(url, function(results) {
-		if (results.length == 0){
-			try{
+	chrome.bookmarks.search(url, function (results) {
+		if (results.length == 0) {
+			try {
 				var host = getHost(url);
-				if (handlers[host] != null){
+				if (handlers[host] != null) {
 					handlers[host](tab, url);
 				}
 			}
-			catch(err){
+			catch (err) {
 				console.log(err);
 			}
-		}
-		else{
-			var t = tab;
 		}
 	});
 }
 
-function getHost(url){
+function getHost(url) {
 	var parser = document.createElement('a');
 	parser.href = url;
 	return parser.host;
 }
 
-function AddBookmarks(url, title, authors, year){
+function AddBookmarks(url, title, authors, year) {
 	var ref = '[' + getInitials(authors) + year.substr(2, 2) + ']';
 	var fullTitle = ref + ' - ' + title + " - " + authors.join(' and ');
-	
-	getYearFolderId(year, function(id){
+
+	getYearFolderId(year, function (id) {
 		AddBookmark(url, fullTitle, id);
 	});
 }
 
 
-function getYearFolderId(year, callback){
-	getPapersFolderId(function(id){
-		chrome.bookmarks.getChildren(id, function(children){
+function getYearFolderId(year, callback) {
+	getRepositoryFolderId(function (id) {
+		chrome.bookmarks.getChildren(id, function (children) {
 			var found = false;
 			children.forEach(element => {
-				if (element.title == year){
+				if (element.title == year) {
 					callback(element.id);
 					found = true;
 					return;
 				}
 			});
-			if (!found){
+			if (!found) {
 				chrome.bookmarks.create({
 					'parentId': id,
-					'title': year},
-					function(newfolder){
-						callback(newfolder.id);
-					});
+					'title': year
+				}, function (newfolder) {
+					callback(newfolder.id);
+				});
 			}
 		});
 	});
 }
 
-function getPapersFolderId(callback){
-	console.log('new');
-	chrome.bookmarks.search("Papers", function(results) {
+function getRepositoryFolderId(callback) {
+	chrome.bookmarks.search('Repository', function (results) {
 		var found = false;
-		for (var i = 0; i < results.length; i++){
-			if (results[i].title == "Papers"){
+		for (var i = 0; i < results.length; i++) {
+			if (results[i].title == 'Repository') {
 				found = true;
-				var id = results[0].id;
+				var id = results[i].id;
 				callback(id);
+				return;
 			}
 		}
-		if (!found){
-			chrome.bookmarks.create({
-				'parentId': '1',
-				'title': 'Papers'},
-				function(newfolder){
-					console.log(newfolder);
-					callback(newfolder.id);
+		if (!found) {
+			var createBookmark = browser.bookmarks.create({
+				'parentId': 'toolbar_____',
+				'title': 'Repository',
+				'type': 'folder'
+			});
+			createBookmark.then(function (newfolder) {
+				callback(newfolder.id);
 			});
 		}
 	});
 }
 
-
-function AddBookmark(url, title, folderId){
-	chrome.bookmarks.getChildren(folderId, function(children) {
+function AddBookmark(url, title, folderId) {
+	chrome.bookmarks.getChildren(folderId, function (children) {
 		var found = false;
-		children.forEach(function(bookmark) { 
+		children.forEach(function (bookmark) {
 			if (bookmark.url == url)
 				found = true;
 		});
-		if (!found){
+		if (!found) {
 			chrome.bookmarks.create({
 				'parentId': folderId,
 				'title': title,
 				'url': url,
-				'index': 0}
-			);
+				'index': 0
+			});
 		}
 	});
 }

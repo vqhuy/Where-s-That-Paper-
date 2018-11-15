@@ -1,6 +1,6 @@
 {
   "name": "Where's That Paper?",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "manifest_version": 2,
   "description": "Automatically adds viewed academic papers to your favorites.",
   "default_locale": "en",
@@ -10,8 +10,13 @@
 	  "src/bg/bibtexParser.js",
 	  "src/bg/scrapers.js",
 	  "src/bg/background.js"
-    ],
-    "persistent": true
+    ]
+  },
+  "browser_action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
   },
   "permissions": [
     "http://*/*",
